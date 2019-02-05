@@ -316,7 +316,7 @@ module.exports = function(classes) {
         var connId;
         do {
           connId = shortid.generate();
-        } while (!this._objConnections[connId]);
+        } while (this._objConnections[connId]);
 
         this._objConnections[connId] = socket;
 
