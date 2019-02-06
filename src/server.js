@@ -351,7 +351,7 @@ module.exports = function(classes) {
         for(var key in this._objConnections){
           if(this._objConnections[key]) {
             var sock = this._objConnections[key];
-            var objMsg = Object.assign({}, {event: eventName}, objData);
+            var objMsg = Object.assign({}, {event: eventName, data: objData});
             sock.send(JSON.stringify(objMsg));
           }
         }

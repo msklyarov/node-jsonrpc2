@@ -295,8 +295,8 @@ module.exports = {
       };
 
       server.broadcastToWS(eventName, testData);
-      expect(sockSentObj1).to.be.eql(Object.assign({}, {event: eventName}, testData));
-      expect(sockSentObj2).to.be.eql(Object.assign({}, {event: eventName}, testData));
+      expect(sockSentObj1).to.be.eql(Object.assign({}, {event: eventName, data: testData}));
+      expect(sockSentObj2).to.be.eql(Object.assign({}, {event: eventName, data: testData}));
     },
 
   }
