@@ -270,13 +270,16 @@ module.exports = {
       expect(server.broadcastToWS).be.ok();
     },
     'Should add socket to subscription': function () {
-      var oldWS=rpc.Websocket;
-      rpc.Websocket = function(){};
       server.handleWebsocket({headers: {host: 'ya.ru'}}, undefined);
       expect(server._objConnections).be.ok();
       expect(Object.keys(server._objConnections).length).to.be.equal(1);
-
-      rpc.Websocket = oldWS;
+    },
+    'Should handle disconnect': function () {
+      server.handleWebsocket({headers: {host: 'ya.ru'}});
+      var id=Object.keys(server._objConnections)[0];
+      var socket=server._objConnections[id];
+      socket.emit('close');
+      expect(Object.keys(server._objConnections).length).to.be.equal(0);
     },
     'Should broadcast to sockets': function () {
       var sockSentObj1 = null;

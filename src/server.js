@@ -343,7 +343,7 @@ module.exports = function(classes) {
 
         // remove from broadcast domain on disconnect
         socket.on('close', function() {
-          delete this._objConnections[connId];
+          delete self._objConnections[connId];
         });
       },
 
