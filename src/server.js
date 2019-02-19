@@ -1,6 +1,6 @@
 var shortid = require('shortid');
 
-module.exports = function(classes) {
+module.exports = function (classes) {
   'use strict';
 
   var
@@ -21,7 +21,7 @@ module.exports = function(classes) {
      * JSON-RPC Server.
      */
     Server = Endpoint.$define('Server', {
-      construct: function($super, opts) {
+      construct: function ($super, opts) {
         $super();
 
         this.opts = opts || {};
@@ -33,7 +33,7 @@ module.exports = function(classes) {
           this._objConnections = Object.create(null);
         }
       },
-      _checkAuth: function(req, res) {
+      _checkAuth: function (req, res) {
         var self = this;
 
         if (self.authHandler) {
@@ -58,7 +58,7 @@ module.exports = function(classes) {
       /**
        * Start listening to incoming connections.
        */
-      listen: function(port, host) {
+      listen: function (port, host) {
         var
           self = this,
           server = http.createServer();
@@ -70,7 +70,7 @@ module.exports = function(classes) {
         if (port) {
           server.listen(port, host);
           Endpoint.trace('***', 'Server listening on http://' +
-                                (host || '127.0.0.1') + ':' + port + '/');
+            (host || '127.0.0.1') + ':' + port + '/');
         }
 
         if (this.opts.websocket === true) {
@@ -87,7 +87,7 @@ module.exports = function(classes) {
         return server;
       },
 
-      listenRaw: function(port, host) {
+      listenRaw: function (port, host) {
         var
           self = this,
           server = net.createServer(function createServer(socket) {
@@ -97,12 +97,12 @@ module.exports = function(classes) {
         server.listen(port, host);
 
         Endpoint.trace('***', 'Server listening on tcp://' +
-                              (host || '127.0.0.1') + ':' + port + '/');
+          (host || '127.0.0.1') + ':' + port + '/');
 
         return server;
       },
 
-      listenHybrid: function(port, host) {
+      listenHybrid: function (port, host) {
         var
           self = this,
           httpServer = self.listen(),
@@ -113,7 +113,7 @@ module.exports = function(classes) {
         server.listen(port, host);
 
         Endpoint.trace('***', 'Server (hybrid) listening on http+tcp://' +
-                              (host || '127.0.0.1') + ':' + port + '/');
+          (host || '127.0.0.1') + ':' + port + '/');
 
         return server;
       },
@@ -121,7 +121,7 @@ module.exports = function(classes) {
       /**
        * Handle HTTP POST request.
        */
-      handleHttp: function(req, res) {
+      handleHttp: function (req, res) {
         var buffer = '', self = this;
         var headers;
 
@@ -200,7 +200,7 @@ module.exports = function(classes) {
               self.emit('error', err);
 
               Endpoint.trace('-->', 'Failure (id ' + decoded.id + '): ' +
-                                    (err.stack ? err.stack : err.toString()));
+                (err.stack ? err.stack : err.toString()));
 
               result = null;
 
@@ -215,7 +215,7 @@ module.exports = function(classes) {
 
             } else {
               Endpoint.trace('-->', 'Response (id ' + decoded.id + '): ' +
-                                    JSON.stringify(result));
+                JSON.stringify(result));
 
               response = {
                 'jsonrpc': '2.0',
@@ -246,7 +246,7 @@ module.exports = function(classes) {
         });
       },
 
-      handleRaw: function(socket) {
+      handleRaw: function (socket) {
         var self = this, conn, parser, requireAuth;
 
         Endpoint.trace('<--', 'Accepted socket connection');
@@ -255,7 +255,7 @@ module.exports = function(classes) {
         parser = new JsonParser();
         requireAuth = !!this.authHandler;
 
-        parser.onValue = function(decoded) {
+        parser.onValue = function (decoded) {
           if (this.stack.length) {
             return;
           }
@@ -275,8 +275,8 @@ module.exports = function(classes) {
             } else {
               // Handle 'auth' message
               if (_.isArray(decoded.params) &&
-                  decoded.params.length === 2 &&
-                  self.authHandler(decoded.params[0], decoded.params[1])) {
+                decoded.params.length === 2 &&
+                self.authHandler(decoded.params[0], decoded.params[1])) {
                 // Authorization completed
                 requireAuth = false;
 
@@ -297,7 +297,7 @@ module.exports = function(classes) {
           }
         };
 
-        socket.on('data', function(chunk) {
+        socket.on('data', function (chunk) {
           try {
             parser.write(chunk);
           } catch (err) {
@@ -306,7 +306,7 @@ module.exports = function(classes) {
         });
       },
 
-      handleWebsocket: function(request, socket, body) {
+      handleWebsocket: function (request, socket, body) {
         var self = this, conn, parser;
 
         // @see faye-websocket
@@ -325,7 +325,7 @@ module.exports = function(classes) {
         conn = new classes.WebSocketConnection(self, socket);
         parser = new JsonParser();
 
-        parser.onValue = function(decoded) {
+        parser.onValue = function (decoded) {
           if (this.stack.length) {
             return;
           }
@@ -333,7 +333,7 @@ module.exports = function(classes) {
           conn.handleMessage(decoded);
         };
 
-        socket.on('message', function(event) {
+        socket.on('message', function (event) {
           try {
             parser.write(event.data);
           } catch (err) {
@@ -342,14 +342,16 @@ module.exports = function(classes) {
         });
 
         // remove from broadcast domain on disconnect
-        socket.on('close', function() {
-          delete self._objConnections[connId];
+        socket.on('close', function () {
+          if (connId && self._objConnections[connId]) {
+            delete self._objConnections[connId];
+          }
         });
       },
 
-      broadcastToWS: function  (eventName, objData) {
-        for(var key in this._objConnections){
-          if(this._objConnections[key]) {
+      broadcastToWS: function (eventName, objData) {
+        for (var key in this._objConnections) {
+          if (this._objConnections[key]) {
             var sock = this._objConnections[key];
             var objMsg = Object.assign({}, {event: eventName, data: objData});
             sock.send(JSON.stringify(objMsg));
@@ -357,10 +359,10 @@ module.exports = function(classes) {
         }
       },
 
-      handleHybrid: function(httpServer, socket) {
+      handleHybrid: function (httpServer, socket) {
         var self = this;
 
-        socket.once('data', function(chunk) {
+        socket.once('data', function (chunk) {
           // If first byte is a capital letter, treat connection as HTTP
           if (chunk[0] >= 65 && chunk[0] <= 90) {
             // TODO: need to find a better way to do this
@@ -385,7 +387,7 @@ module.exports = function(classes) {
        * Or just with a single valid username and password:
        *   sever.enableAuth(''myuser'', ''supersecretpassword'');
        */
-      enableAuth: function(handler, password) {
+      enableAuth: function (handler, password) {
         if (!_.isFunction(handler)) {
           var user = '' + handler;
           password = '' + password;
@@ -401,7 +403,7 @@ module.exports = function(classes) {
       /**
        * Handle a low level server error.
        */
-      handleHttpError: function(req, res, error, custom_headers) {
+      handleHttpError: function (req, res, error, custom_headers) {
         var message = JSON.stringify({
           'jsonrpc': '2.0',
           'error': {code: error.code, message: error.message},
