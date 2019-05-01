@@ -1,5 +1,5 @@
 var shortid = require('shortid');
-
+const RateLimiter = require('./rate-limiter');
 module.exports = function (classes) {
   'use strict';
 
@@ -31,6 +31,10 @@ module.exports = function (classes) {
 
         if (this.opts.websocket) {
           this._objConnections = Object.create(null);
+        }
+        this.ratelimiter = null;
+        if(this.opts.ratelimit) {
+          this.ratelimiter = new RateLimiter(opts.ratelimit.msPassedBetween,opts.ratelimit.maxPerInterval,opts.ratelimit.msInterval);
         }
       },
       _checkAuth: function (req, res) {
@@ -117,14 +121,23 @@ module.exports = function (classes) {
 
         return server;
       },
-
+      _handleRateLimitError(req,res) {
+        const headers = {
+          'Content-Length': 0
+        };
+        res.writeHead(429, headers);
+        res.end();
+      },
       /**
        * Handle HTTP POST request.
        */
       handleHttp: function (req, res) {
         var buffer = '', self = this;
         var headers;
-
+        if(this.ratelimiter && !this.ratelimiter.check()){
+          self._handleRateLimitError(req,res);
+          return;
+        }
         if (req.method === 'OPTIONS') {
           headers = {
             'Content-Length': 0,

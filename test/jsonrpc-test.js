@@ -1,60 +1,64 @@
-'use strict';
+//'use strict';
 
 var
   expect = require('expect.js'),
   rpc = require('../src/jsonrpc'),
-  server, MockRequest, MockResponse, testBadRequest, TestModule, echo;
+  server, MockRequest, MockResponse, testBadRequest, TestModule, echo, sleep;
 
 module.exports = {
-  beforeEach: function () {
+  beforeEach: function() {
     server = rpc.Server.$create({websocket: true});
 
     // MOCK REQUEST/RESPONSE OBJECTS
     MockRequest = rpc.EventEmitter.$define('MockRequest', {
-      construct: function ($super, method) {
+      construct: function($super, method) {
         $super();
         this.method = method;
       }
     });
-
-    echo = function (args, opts, callback) {
+    sleep = (delay) =>  {
+      return new Promise(resolve => {
+          setTimeout(resolve, delay);
+      });
+    };
+    echo = function(args, opts, callback) {
       callback(null, args[0]);
     };
     server.expose('echo', echo);
 
-    var throw_error = function () {
+    var throw_error = function() {
       throw new rpc.Error.InternalError();
     };
     server.expose('throw_error', throw_error);
 
-    var json_rpc_error = function (args, opts, callback) {
+    var json_rpc_error = function(args, opts, callback) {
       callback(new rpc.Error.InternalError(), args[0]);
     };
     server.expose('json_rpc_error', json_rpc_error);
 
-    var text_error = function (args, opts, callback) {
+    var text_error = function(args, opts, callback) {
       callback('error', args[0]);
     };
     server.expose('text_error', text_error);
 
-    var javascript_error = function (args, opts, callback) {
+    var javascript_error = function(args, opts, callback) {
       callback(new Error(), args[0]);
     };
 
     server.expose('javascript_error', javascript_error);
 
     MockResponse = rpc.EventEmitter.$define('MockResponse', {
-      construct: function ($super) {
+      construct: function($super) {
         $super();
 
-        this.writeHead = this.sendHeader = function (httpCode) {
+        this.writeHead = this.sendHeader = function(httpCode) {
           this.httpCode = httpCode;
           this.httpHeaders = httpCode;
         };
-        this.write = this.sendBody = function (httpBody) {
+        this.write = this.sendBody = function(httpBody) {
           this.httpBody = httpBody;
         };
-        this.end = this.finish = function () {
+        this.end = this.finish = function() {
         };
         this.connection = new rpc.EventEmitter();
       }
@@ -62,14 +66,14 @@ module.exports = {
 
     // A SIMPLE MODULE
     TestModule = {
-      foo: function (a, b) {
+      foo: function(a, b) {
         return ['foo', 'bar', a, b];
       },
 
       other: 'hello'
     };
 
-    testBadRequest = function (testJSON, done) {
+    testBadRequest = function(testJSON, done) {
       var req = new MockRequest('POST');
       var res = new MockResponse();
       server.handleHttp(req, res);
@@ -82,7 +86,7 @@ module.exports = {
       done();
     };
   },
-  afterEach: function () {
+  afterEach: function() {
     server = null;
     MockRequest = null;
     MockResponse = null;
@@ -90,16 +94,16 @@ module.exports = {
     TestModule = null;
   },
   'json-rpc2': {
-    'Server expose': function () {
+    'Server expose': function() {
       expect(server.functions.echo).to.eql(echo);
     },
 
-    'Server exposeModule': function () {
+    'Server exposeModule': function() {
       server.exposeModule('test', TestModule);
       expect(server.functions['test.foo']).to.eql(TestModule.foo);
     },
 
-    'GET Server handle NonPOST': function () {
+    'GET Server handle NonPOST': function() {
       var req = new MockRequest('GET');
       var res = new MockResponse();
       server.handleHttp(req, res);
@@ -108,7 +112,7 @@ module.exports = {
       expect(decoded.error.message).to.equal('Invalid Request');
       expect(decoded.error.code).to.equal(-32600);
     },
-    'Method throw an error': function () {
+    'Method throw an error': function() {
       var req = new MockRequest('POST');
       var res = new MockResponse();
       server.handleHttp(req, res);
@@ -119,7 +123,7 @@ module.exports = {
       expect(decoded.error.message).to.equal('InternalError');
       expect(decoded.error.code).to.equal(-32603);
     },
-    'Method return an rpc error': function () {
+    'Method return an rpc error': function() {
       var req = new MockRequest('POST');
       var res = new MockResponse();
       server.handleHttp(req, res);
@@ -130,19 +134,19 @@ module.exports = {
       expect(decoded.error.message).to.equal('InternalError');
       expect(decoded.error.code).to.equal(-32603);
     },
-//      text_error javascript_error
+    //      text_error javascript_error
 
-    'Missing object attribute (method)': function (done) {
+    'Missing object attribute (method)': function(done) {
       var testJSON = '{ "params": ["Hello, World!"], "id": 1 }';
       testBadRequest(testJSON, done);
     },
 
-    'Missing object attribute (params)': function (done) {
+    'Missing object attribute (params)': function(done) {
       var testJSON = '{ "method": "echo", "id": 1 }';
       testBadRequest(testJSON, done);
     },
 
-    'Unregistered method': function () {
+    'Unregistered method': function() {
       var testJSON = '{ "method": "notRegistered", "params": ["Hello, World!"], "id": 1 }';
       var req = new MockRequest('POST');
       var res = new MockResponse();
@@ -161,7 +165,7 @@ module.exports = {
 
     // VALID REQUEST
 
-    'Simple synchronous echo': function () {
+    'Simple synchronous echo': function() {
       var testJSON = '{ "method": "echo", "params": ["Hello, World!"], "id": 1 }';
       var req = new MockRequest('POST');
       var res = new MockResponse();
@@ -175,7 +179,7 @@ module.exports = {
       expect(decoded.result).to.equal('Hello, World!');
     },
 
-    'Simple synchronous echo with id as null': function () {
+    'Simple synchronous echo with id as null': function() {
       var testJSON = '{ "method": "echo", "params": ["Hello, World!"], "id": null }';
       var req = new MockRequest('POST');
       var res = new MockResponse();
@@ -189,7 +193,7 @@ module.exports = {
       expect(decoded.result).to.equal('Hello, World!');
     },
 
-    'Simple synchronous echo with string as id': function () {
+    'Simple synchronous echo with string as id': function() {
       var testJSON = '{ "method": "echo", "params": ["Hello, World!"], "id": "test" }';
       var req = new MockRequest('POST');
       var res = new MockResponse();
@@ -203,10 +207,10 @@ module.exports = {
       expect(decoded.result).to.equal('Hello, World!');
     },
 
-    'Using promise': function () {
+    'Using promise': function() {
       // Expose a function that just returns a promise that we can control.
       var callbackRef = null;
-      server.expose('promiseEcho', function (args, opts, callback) {
+      server.expose('promiseEcho', function(args, opts, callback) {
         callbackRef = callback;
       });
       // Build a request to call that function
@@ -232,9 +236,9 @@ module.exports = {
       expect(decoded.result).to.equal('Hello, World!');
     },
 
-    'Triggering an errback': function () {
+    'Triggering an errback': function() {
       var callbackRef = null;
-      server.expose('errbackEcho', function (args, opts, callback) {
+      server.expose('errbackEcho', function(args, opts, callback) {
         callbackRef = callback;
       });
       var testJSON = '{ "method": "errbackEcho", "params": ["Hello, World!"], "id": 1 }';
@@ -254,7 +258,7 @@ module.exports = {
       expect(decoded.error.code).to.equal(-32603);
       expect(decoded.result).to.equal(undefined);
     },
-    'Notification request': function () {
+    'Notification request': function() {
       var testJSON = '{ "method": "notify_test", "params": ["Hello, World!"] }';
       var req = new MockRequest('POST');
       var res = new MockResponse();
@@ -266,33 +270,33 @@ module.exports = {
       expect(res.httpCode).to.equal(200);
       expect(res.httpBody).to.equal('');
     },
-    'Server should have broadcastToWS method': function () {
+    'Server should have broadcastToWS method': function() {
       expect(server.broadcastToWS).be.ok();
     },
-    'Should add socket to subscription': function () {
+    'Should add socket to subscription': function() {
       server.handleWebsocket({headers: {host: 'ya.ru'}}, undefined);
       expect(server._objConnections).be.ok();
       expect(Object.keys(server._objConnections).length).to.be.equal(1);
     },
-    'Should handle disconnect': function () {
+    'Should handle disconnect': function() {
       server.handleWebsocket({headers: {host: 'ya.ru'}});
-      var id=Object.keys(server._objConnections)[0];
-      var socket=server._objConnections[id];
+      var id = Object.keys(server._objConnections)[0];
+      var socket = server._objConnections[id];
       socket.emit('close');
       expect(Object.keys(server._objConnections).length).to.be.equal(0);
     },
-    'Should broadcast to sockets': function () {
+    'Should broadcast to sockets': function() {
       var sockSentObj1 = null;
       var sockSentObj2 = null;
       var testData = {a: 1, b: 23};
       var eventName = 'testEvent';
       server._objConnections['id1'] = {
-        send: function (strVal) {
+        send: function(strVal) {
           sockSentObj1 = JSON.parse(strVal);
         }
       };
       server._objConnections['id2'] = {
-        send: function (strVal) {
+        send: function(strVal) {
           sockSentObj2 = JSON.parse(strVal);
         }
       };
@@ -301,6 +305,115 @@ module.exports = {
       expect(sockSentObj1).to.be.eql(Object.assign({}, {event: eventName, data: testData}));
       expect(sockSentObj2).to.be.eql(Object.assign({}, {event: eventName, data: testData}));
     },
+    'should respond 429 if the number of requests per interval is exceeded': function() {
+      var testJSON = '{ "method": "echo", "params": ["Hello, World!"], "id": 1 }';
+      const _server = rpc.Server.$create(
+        {
+          websocket: true,
+          ratelimit: {
+            msPassedBetween: 0,
+            maxPerInterval: 1,
+            msInterval: 60 * 1000
+          }
+        }
+      );
 
+      let req = new MockRequest('POST');
+      let res = new MockResponse();
+      _server.handleHttp(req, res);
+      req.emit('data', testJSON);
+      req.emit('end');
+      expect(res.httpCode).to.equal(200);
+
+      res = new MockResponse();
+      _server.handleHttp(req, res);
+      //console.log(res);
+
+      expect(res.httpCode).to.equal(429);
+    },
+    'should respond 429 if the interval between requests is exceeded': function() {
+      let testJSON = '{ "method": "echo", "params": ["Hello, World!"], "id": 1 }';
+
+      const _server = rpc.Server.$create(
+        {
+          websocket: true,
+          ratelimit: {
+            msPassedBetween: 20,
+            maxPerInterval: 10,
+            msInterval: 60 * 1000
+          }
+        }
+      );
+
+      let req = new MockRequest('POST');
+      let res = new MockResponse();
+      _server.handleHttp(req, res);
+      req.emit('data', testJSON);
+      req.emit('end');
+      expect(res.httpCode).to.equal(200);
+
+      req = new MockRequest('POST');
+      res = new MockResponse();
+      _server.handleHttp(req, res);
+
+      expect(res.httpCode).to.equal(429);
+    },
+    'should pass requests if the interval between requests is not exceeded': async function() {
+      let testJSON = '{ "method": "echo", "params": ["Hello, World!"], "id": 1 }';
+
+      const _server = rpc.Server.$create(
+        {
+          websocket: true,
+          ratelimit: {
+            msPassedBetween: 20,
+            maxPerInterval: 10,
+            msInterval: 60 * 1000
+          }
+        }
+      );
+
+      let req = new MockRequest('POST');
+      let res = new MockResponse();
+      _server.handleHttp(req, res);
+      req.emit('data', testJSON);
+      req.emit('end');
+      expect(res.httpCode).to.equal(200);
+      await sleep(25);
+      req = new MockRequest('POST');
+      res = new MockResponse();
+      _server.handleHttp(req, res);
+      req.emit('data', testJSON);
+      req.emit('end');
+
+      expect(res.httpCode).to.equal(200);
+    },
+    'should pass requests if the number of requests per interval is not exceeded': function() {
+      let testJSON = '{ "method": "echo", "params": ["Hello, World!"], "id": 1 }';
+
+      const _server = rpc.Server.$create(
+        {
+          websocket: true,
+          ratelimit: {
+            msPassedBetween: 0,
+            maxPerInterval: 2,
+            msInterval: 60 * 1000
+          }
+        }
+      );
+
+      let req = new MockRequest('POST');
+      let res = new MockResponse();
+      _server.handleHttp(req, res);
+      req.emit('data', testJSON);
+      req.emit('end');
+      expect(res.httpCode).to.equal(200);
+      req = new MockRequest('POST');
+      res = new MockResponse();
+      _server.handleHttp(req, res);
+      req.emit('data', testJSON);
+      req.emit('end');
+
+      expect(res.httpCode).to.equal(200);
+    }
   }
 };
