@@ -34,7 +34,7 @@
     "eventemitter3": "1.x.x",
     "faye-websocket": "0.x.x",
     "jsonparse": "1.x.x",
-    "lodash": "3.x.x",
+    "lodash": "^4.17.11",
     "object-assign": "4.x",
     "shortid": "^2.2.14"
   },
@@ -54,10 +54,10 @@
     "url": "https://github.com/pocesar/node-jsonrpc2/issues"
   },
   "devDependencies": {
-    "mocha": "2.x.x",
     "expect.js": "0.x.x",
+    "istanbul": "0.x.x",
     "jshint": "2.x.x",
-    "istanbul": "0.x.x"
+    "mocha": "^6.1.4"
   },
   "scripts": {
     "test": "jshint examples src test && mocha test/*.js",
