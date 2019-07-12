@@ -32,7 +32,7 @@
     "debug": "2.x.x",
     "es5class": "2.x.x",
     "eventemitter3": "1.x.x",
-    "faye-websocket": "0.x.x",
+    "faye-websocket": "^0.11.3",
     "jsonparse": "1.x.x",
     "lodash": "^4.17.11",
     "object-assign": "4.x",
@@ -56,7 +56,7 @@
   "devDependencies": {
     "expect.js": "0.x.x",
     "istanbul": "0.x.x",
-    "jshint": "2.x.x",
+    "jshint": "^2.10.2",
     "mocha": "^6.1.4"
   },
   "scripts": {
