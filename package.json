@@ -39,7 +39,7 @@
     "shortid": "^2.2.14"
   },
   "engines": {
-    "node": "16.17.0"
+    "node": "18.18.2"
   },
   "contributors": [
     "Bill Casarin <bill@casarin.ca> (jb55.com)",
